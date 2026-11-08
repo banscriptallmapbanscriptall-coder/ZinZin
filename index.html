@@ -70,9 +70,12 @@
             </button>
         </div>
 
-        <div class="p-3">
+        <div class="p-3 space-y-2">
             <button onclick="createNewChat()" class="w-full bg-neutral-100 hover:bg-white text-neutral-900 font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow transition-all text-sm">
                 <i class="fa-solid fa-plus text-xs"></i> Cuộc trò chuyện mới
+            </button>
+            <button onclick="openCustomAiModal()" class="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs transition">
+                <i class="fa-solid fa-sliders text-xs"></i> Thêm AI tùy chỉnh (API Key)
             </button>
         </div>
 
@@ -114,8 +117,7 @@
                 <!-- Model Selector -->
                 <div class="flex items-center bg-neutral-900 p-1 rounded-xl border border-neutral-800">
                     <select id="modelSelect" class="bg-transparent text-xs font-medium text-neutral-200 px-2.5 py-1 outline-none cursor-pointer">
-                        <option value="gemini-4-argon">Gemini 4 (Argon)</option>
-                        <option value="claude-opus-5-5">Claude 5.5 Opus</option>
+                        <!-- Options được load động từ JS -->
                     </select>
                 </div>
             </div>
@@ -132,7 +134,7 @@
                     Z
                 </div>
                 <h2 class="text-xl font-bold text-neutral-100">Chào mừng đến với ZinZin AI</h2>
-                <p class="text-xs text-neutral-400">Trợ lý lập trình và phân tích thông minh tối giản với tone đen trắng xám tinh tế.</p>
+                <p class="text-xs text-neutral-400">Trợ lý lập trình thông minh hỗ trợ xử lý code lớn và quản lý mô hình linh hoạt.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full pt-2">
                     <button onclick="sendQuickPrompt('Viết code Python tạo ứng dụng web đơn giản')" class="p-3 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs text-left text-neutral-300 transition">💻 Viết code Python web app</button>
                     <button onclick="sendQuickPrompt('Giải thích cách hoạt động của AI')" class="p-3 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs text-left text-neutral-300 transition">🧠 Giải thích công nghệ AI</button>
@@ -145,30 +147,30 @@
             <div class="max-w-4xl mx-auto">
                 <form id="chatForm" onsubmit="handleSendMessage(event)" class="relative flex items-center bg-neutral-900 border border-neutral-800 rounded-2xl shadow-lg focus-within:border-neutral-600 transition-all">
                     
-                    <!-- File Attachment Input & Button (Dấu cộng) -->
+                    <!-- File Attachment Input & Button -->
                     <input type="file" id="fileInput" class="hidden" multiple onchange="handleFileSelect(event)">
                     <button type="button" onclick="document.getElementById('fileInput').click()" class="ml-2.5 text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-neutral-800 transition" title="Đính kèm ảnh hoặc tệp">
                         <i class="fa-solid fa-plus text-sm"></i>
                     </button>
 
-                    <textarea id="userInput" rows="1" placeholder="Nhắn tin cho ZinZin AI... (Shift + Enter xuống dòng)" class="w-full bg-transparent text-neutral-100 placeholder-neutral-500 text-xs sm:text-sm px-3 py-3 outline-none resize-none max-h-36 custom-scrollbar"></textarea>
+                    <textarea id="userInput" rows="1" placeholder="Nhắn tin hoặc dán code vào đây... (Shift + Enter xuống dòng)" class="w-full bg-transparent text-neutral-100 placeholder-neutral-500 text-xs sm:text-sm px-3 py-3 outline-none resize-none max-h-36 custom-scrollbar"></textarea>
                     
                     <button type="submit" id="sendBtn" class="m-2 bg-neutral-100 hover:bg-white text-neutral-900 w-9 h-9 rounded-xl flex items-center justify-center shadow transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
                         <i class="fa-solid fa-arrow-up text-xs"></i>
                     </button>
                 </form>
 
-                <!-- File preview container if selected -->
+                <!-- File preview container -->
                 <div id="filePreviewContainer" class="flex flex-wrap gap-2 mt-2 px-1"></div>
 
                 <div class="text-center mt-2">
-                    <p class="text-[10px] text-neutral-500">ZinZin AI - Phong cách tối giản Đen Trắng Xám.</p>
+                    <p class="text-[10px] text-neutral-500">ZinZin AI - Tối ưu hóa xử lý mã nguồn và API tùy chỉnh.</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- AUTHENTICATION MODAL -->
+    <!-- MODAL ĐĂNG NHẬP (Google & Email/Pass) -->
     <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white">
@@ -181,13 +183,11 @@
                 <p class="text-xs text-neutral-400 mt-0.5">Chọn tài khoản Google hoặc nhập thông tin trực tiếp</p>
             </div>
 
-            <!-- Tabs Switcher -->
             <div class="flex bg-black p-1 rounded-xl mb-4 border border-neutral-800">
                 <button type="button" onclick="switchAuthTab('google')" id="tabGoogleBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-neutral-800 text-white transition">Tài khoản Google</button>
                 <button type="button" onclick="switchAuthTab('email')" id="tabEmailBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg text-neutral-400 hover:text-white transition">Nhập Gmail & Mật khẩu</button>
             </div>
 
-            <!-- Tab 1: Google Account List -->
             <div id="googleAuthSection" class="space-y-2.5">
                 <p class="text-xs font-medium text-neutral-300">Danh sách tài khoản Google:</p>
                 <div class="space-y-2">
@@ -211,7 +211,6 @@
                 </div>
             </div>
 
-            <!-- Tab 2: Direct Email & Password -->
             <form id="emailAuthSection" onsubmit="loginWithEmailPassword(event)" class="space-y-3.5 hidden">
                 <div>
                     <label class="block text-xs font-medium text-neutral-300 mb-1">Địa chỉ Gmail</label>
@@ -226,19 +225,72 @@
         </div>
     </div>
 
+    <!-- MODAL THÊM AI TÙY CHỈNH (CUSTOM AI) -->
+    <div id="customAiModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeCustomAiModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            
+            <div class="text-center mb-5">
+                <div class="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xl font-bold mx-auto mb-2 shadow"><i class="fa-solid fa-sliders text-sm"></i></div>
+                <h3 class="text-lg font-bold text-neutral-100">Thêm mô hình AI tùy chỉnh</h3>
+                <p class="text-xs text-neutral-400 mt-0.5">Nhập tên model và API Key riêng của bạn</p>
+            </div>
+
+            <form onsubmit="handleSaveCustomAi(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-medium text-neutral-300 mb-1">Tên hiển thị AI</label>
+                    <input type="text" id="customAiName" required placeholder="Ví dụ: My GPT-4o Custom" class="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 outline-none focus:border-neutral-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-neutral-300 mb-1">Mã Model (Model ID trên Gateway)</label>
+                    <input type="text" id="customAiModelId" required placeholder="Ví dụ: gpt-4o, claude-3-5-sonnet" class="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 outline-none focus:border-neutral-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-neutral-300 mb-1">API Key</label>
+                    <input type="password" id="customAiKey" required placeholder="sk-live-..." class="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 outline-none focus:border-neutral-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-neutral-300 mb-1">Base URL (Tùy chọn, mặc định Literouter)</label>
+                    <input type="text" id="customAiBaseUrl" value="https://literouter.fun/v1/chat/completions" class="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 outline-none focus:border-neutral-500">
+                </div>
+                <button type="submit" class="w-full bg-neutral-100 hover:bg-white text-neutral-900 font-medium py-2.5 rounded-xl text-xs shadow transition mt-2">Lưu & Sử dụng AI</button>
+            </form>
+
+            <div class="mt-4 pt-3 border-t border-neutral-800">
+                <p class="text-[11px] text-neutral-400 mb-2 font-medium">Danh sách AI tùy chỉnh đã lưu:</p>
+                <div id="customAiList" class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                    <!-- Dynamic loaded -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        const API_KEYS = {
-            "gemini-4-argon": "sk-live-99b6aa7022a6f990b6ee62129c6ff9c9",
-            "claude-opus-5-5": "sk-live-99e192f9da55c06fc4e9f673dd8f0b00"
+        // Mặc định các AI có sẵn
+        const DEFAULT_MODELS = {
+            "gemini-4-argon": { name: "Gemini 4 (Argon)", key: "sk-live-99b6aa7022a6f990b6ee62129c6ff9c9", url: "https://literouter.fun/v1/chat/completions" },
+            "claude-opus-5-5": { name: "Claude 5.5 Opus", key: "sk-live-99e192f9da55c06fc4e9f673dd8f0b00", url: "https://literouter.fun/v1/chat/completions" }
         };
-        const GATEWAY_URL = "https://literouter.fun/v1/chat/completions";
+
+        let customModels = JSON.parse(localStorage.getItem('zinzin_custom_models')) || {};
+        
+        function getAllModels() {
+            let combined = { ...DEFAULT_MODELS };
+            for (let id in customModels) {
+                combined[id] = customModels[id];
+            }
+            return combined;
+        }
 
         let chats = JSON.parse(localStorage.getItem('zinzin_chats')) || [];
         let currentChatId = localStorage.getItem('zinzin_current_id') || null;
         let attachedFiles = [];
 
         document.addEventListener('DOMContentLoaded', () => {
+            renderModelSelector();
             renderChatList();
             if (chats.length > 0 && currentChatId) {
                 loadChat(currentChatId);
@@ -261,7 +313,22 @@
             });
         });
 
-        // Xử lý bật tắt sidebar cực kỳ mượt mà
+        function renderModelSelector() {
+            const select = document.getElementById('modelSelect');
+            const allModels = getAllModels();
+            const currentSelected = select.value;
+            select.innerHTML = '';
+            for (let id in allModels) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.innerText = allModels[id].name;
+                select.appendChild(opt);
+            }
+            if (allModels[currentSelected]) {
+                select.value = currentSelected;
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -269,7 +336,6 @@
             overlay.classList.toggle('hidden');
         }
 
-        // Xử lý chọn file/ảnh qua nút dấu cộng
         function handleFileSelect(e) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -409,6 +475,7 @@
             document.getElementById('chatForm').dispatchEvent(new Event('submit'));
         }
 
+        // --- XỬ LÝ GỬI TIN NHẮN CÓ TIMEOUT CHỐNG ĐƠ ---
         async function handleSendMessage(e) {
             e.preventDefault();
             const input = document.getElementById('userInput');
@@ -440,26 +507,34 @@
             appendThinkingUI(thinkingId);
             scrollToBottom();
 
-            const selectedModel = document.getElementById('modelSelect').value;
-            const apiKey = API_KEYS[selectedModel];
+            const selectedModelId = document.getElementById('modelSelect').value;
+            const allModels = getAllModels();
+            const modelConfig = allModels[selectedModelId] || DEFAULT_MODELS["gemini-4-argon"];
+
+            // Tạo cơ chế Timeout 45 giây để tránh bị đơ vĩnh viễn khi mạng lag hoặc prompt quá dài
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 45000);
 
             try {
-                const response = await fetch(GATEWAY_URL, {
+                const response = await fetch(modelConfig.url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Authorization': `Bearer ${modelConfig.key}`
                     },
                     body: JSON.stringify({
-                        model: selectedModel,
+                        model: selectedModelId,
                         messages: [
                             { role: "system", content: "Bạn là trợ lý AI chuyên nghiệp có tên là ZinZin, hỗ trợ viết code xuất sắc, tư duy logic và trình bày đẹp mắt." },
                             ...chat.messages.map(m => ({ role: m.role, content: m.content }))
                         ],
                         temperature: 0.7,
                         stream: true
-                    })
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!response.ok) throw new Error(`Lỗi kết nối Gateway (${response.status})`);
 
@@ -503,8 +578,13 @@
                 saveAndRender();
 
             } catch (error) {
+                clearTimeout(timeoutId);
                 removeElement(thinkingId);
-                const errorMsg = `⚠️ **Lỗi kết nối:** ${error.message}. Vui lòng thử lại sau.`;
+                const isTimeout = error.name === 'AbortError';
+                const errorMsg = isTimeout 
+                    ? `⚠️ **Lỗi:** Quá thời gian phản hồi (Timeout). Prompt hoặc đoạn code của bạn có thể quá dài khiến máy chủ mất nhiều thời gian xử lý. Hãy thử chia nhỏ câu hỏi nhé!`
+                    : `⚠️ **Lỗi kết nối:** ${error.message}. Vui lòng kiểm tra lại API Key hoặc mạng.`;
+                
                 appendMessageToUI('assistant', errorMsg, []);
                 chat.messages.push({ role: 'assistant', content: errorMsg });
                 saveAndRender();
@@ -637,13 +717,8 @@
         }
 
         // --- AUTHENTICATION MODAL LOGIC ---
-        function openAuthModal() {
-            document.getElementById('authModal').classList.remove('hidden');
-        }
-
-        function closeAuthModal() {
-            document.getElementById('authModal').classList.add('hidden');
-        }
+        function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
         function switchAuthTab(tab) {
             const googleSec = document.getElementById('googleAuthSection');
@@ -703,6 +778,63 @@
             localStorage.removeItem('zinzin_user');
             document.getElementById('userProfile').classList.add('hidden');
             document.getElementById('authSection').classList.remove('hidden');
+        }
+
+        // --- CUSTOM AI MODAL LOGIC ---
+        function openCustomAiModal() {
+            document.getElementById('customAiModal').classList.remove('hidden');
+            renderCustomAiList();
+        }
+        function closeCustomAiModal() {
+            document.getElementById('customAiModal').classList.add('hidden');
+        }
+
+        function handleSaveCustomAi(e) {
+            e.preventDefault();
+            const name = document.getElementById('customAiName').value.trim();
+            const modelId = document.getElementById('customAiModelId').value.trim();
+            const key = document.getElementById('customAiKey').value.trim();
+            const url = document.getElementById('customAiBaseUrl').value.trim() || "https://literouter.fun/v1/chat/completions";
+
+            if (!name || !modelId || !key) return;
+
+            customModels[modelId] = { name, key, url };
+            localStorage.setItem('zinzin_custom_models', JSON.stringify(customModels));
+            
+            renderModelSelector();
+            renderCustomAiList();
+            document.getElementById('modelSelect').value = modelId;
+            closeCustomAiModal();
+        }
+
+        function renderCustomAiList() {
+            const listEl = document.getElementById('customAiList');
+            listEl.innerHTML = '';
+            const keys = Object.keys(customModels);
+            if (keys.length === 0) {
+                listEl.innerHTML = '<p class="text-[10px] text-neutral-500 italic">Chưa có AI tùy chỉnh nào.</p>';
+                return;
+            }
+            keys.forEach(id => {
+                const item = customModels[id];
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-black/60 border border-neutral-800 p-2 rounded-xl text-xs";
+                div.innerHTML = `
+                    <div class="truncate mr-2">
+                        <p class="font-semibold text-neutral-200 truncate">${escapeHtml(item.name)}</p>
+                        <p class="text-[10px] text-neutral-500 truncate">ID: ${escapeHtml(id)}</p>
+                    </div>
+                    <button type="button" onclick="deleteCustomAi('${id}')" class="text-neutral-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function deleteCustomAi(id) {
+            delete customModels[id];
+            localStorage.setItem('zinzin_custom_models', JSON.stringify(customModels));
+            renderModelSelector();
+            renderCustomAiList();
         }
     </script>
 </body>
