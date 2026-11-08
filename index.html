@@ -23,12 +23,12 @@
     </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Marked.js for Markdown & Code highlighting -->
+    <!-- Marked.js for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         .pulse-dot { animation: pulse 1.4s infinite ease-in-out both; }
         .pulse-dot:nth-child(1) { animation-delay: -0.32s; }
@@ -38,12 +38,23 @@
         .code-block-wrapper { position: relative; margin: 1rem 0; }
         .copy-btn { position: absolute; top: 8px; right: 8px; background: #3b82f6; color: white; padding: 4px 8px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
         .copy-btn:hover { background: #2563eb; }
+        /* Style cho tin nhắn dài bị thu gọn */
+        .msg-collapsed {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
-<body class="bg-darkBg text-slate-100 h-screen flex overflow-hidden">
+<body class="bg-darkBg text-slate-100 h-screen flex overflow-hidden relative">
+
+    <!-- OVERLAY CHO MOBILE KHI MỞ SIDEBAR -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden transition-opacity"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="w-72 bg-sidebarBg flex flex-col border-r border-slate-800 transition-all duration-300 z-20">
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-sidebarBg flex flex-col border-r border-slate-800 transition-transform duration-300 z-30 -translate-x-full md:translate-x-0">
         <!-- Logo & New Chat -->
         <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
             <div class="flex items-center space-x-3">
@@ -52,10 +63,10 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-lg tracking-wide">ZinZin AI</h1>
-                    <span class="text-xs text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Sẵn sàng</span>
+                    <span class="text-xs text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Online</span>
                 </div>
             </div>
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white md:hidden">
+            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white md:hidden p-1">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
@@ -68,25 +79,25 @@
 
         <!-- Chat History List -->
         <div class="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1.5" id="chatList">
-            <!-- Dynamically filled -->
+            <!-- Danh sách chat dynamic -->
         </div>
 
-        <!-- User Profile / Google Login Section -->
+        <!-- User Profile / Auth Section -->
         <div class="p-4 border-t border-slate-700/50 bg-slate-900/40">
             <div id="authSection">
-                <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-100 text-slate-800 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-sm shadow transition">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" alt="Google"> Đăng nhập Google
+                <button onclick="openAuthModal()" class="w-full bg-white hover:bg-slate-100 text-slate-800 font-medium py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-sm shadow transition">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" alt="Google"> Đăng nhập tài khoản
                 </button>
             </div>
             <div id="userProfile" class="hidden flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <img id="userAvatar" src="" class="w-9 h-9 rounded-full border border-indigo-500" alt="Avatar">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <img id="userAvatar" src="" class="w-9 h-9 rounded-full border border-indigo-500 shrink-0 object-cover" alt="Avatar">
                     <div class="overflow-hidden">
                         <p id="userName" class="text-sm font-semibold truncate text-slate-200"></p>
-                        <p class="text-xs text-slate-400 truncate">Tài khoản Google</p>
+                        <p id="userEmail" class="text-xs text-slate-400 truncate"></p>
                     </div>
                 </div>
-                <button onclick="logout()" class="text-slate-400 hover:text-rose-400 p-1" title="Đăng xuất">
+                <button onclick="logout()" class="text-slate-400 hover:text-rose-400 p-1 shrink-0" title="Đăng xuất">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
@@ -94,36 +105,36 @@
     </aside>
 
     <!-- MAIN CHAT AREA -->
-    <main class="flex-1 flex flex-col h-full bg-darkBg relative">
+    <main class="flex-1 flex flex-col h-full bg-darkBg relative w-full overflow-hidden">
         <!-- Top Navbar -->
-        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-darkBg/80 backdrop-blur sticky top-0 z-10">
+        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-darkBg/80 backdrop-blur sticky top-0 z-10 shrink-0">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <!-- Model Selector -->
                 <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700">
-                    <select id="modelSelect" class="bg-transparent text-sm font-medium text-slate-200 px-3 py-1.5 outline-none cursor-pointer">
+                    <select id="modelSelect" class="bg-transparent text-xs sm:text-sm font-medium text-slate-200 px-2 sm:px-3 py-1.5 outline-none cursor-pointer">
                         <option value="gemini-4-argon">Gemini 4 (Argon)</option>
                         <option value="claude-opus-5-5">Claude 5.5 Opus</option>
                     </select>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Gateway Active</span>
+                <span class="text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Gateway Active</span>
             </div>
         </header>
 
         <!-- Messages Container -->
-        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar">
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6 custom-scrollbar">
             <!-- Welcome Screen -->
-            <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4">
+            <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 px-4">
                 <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-3xl font-bold shadow-xl shadow-indigo-500/20">
                     Z
                 </div>
-                <h2 class="text-2xl font-bold text-white">Chào mừng bạn đến với ZinZin AI!</h2>
-                <p class="text-sm text-slate-400">Trợ lý AI thông minh hỗ trợ lập trình, giải đáp thắc mắc và sáng tạo nội dung với Gemini 4 và Claude 5.5 Opus.</p>
-                <div class="grid grid-cols-2 gap-2 w-full pt-4">
+                <h2 class="text-2xl font-bold text-white">Chào mừng đến với ZinZin AI!</h2>
+                <p class="text-sm text-slate-400">Trợ lý AI thông minh hỗ trợ lập trình, giải đáp thắc mắc và xử lý code mượt mà với Gemini 4 & Claude 5.5.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full pt-4">
                     <button onclick="sendQuickPrompt('Viết code Python tạo ứng dụng web đơn giản')" class="p-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl text-xs text-left text-slate-300 transition">💻 Viết code Python web app</button>
                     <button onclick="sendQuickPrompt('Giải thích cách hoạt động của AI')" class="p-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl text-xs text-left text-slate-300 transition">🧠 Giải thích công nghệ AI</button>
                 </div>
@@ -131,35 +142,90 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-4 bg-darkBg border-t border-slate-800">
+        <div class="p-3 sm:p-4 bg-darkBg border-t border-slate-800 shrink-0">
             <div class="max-w-4xl mx-auto">
                 <form id="chatForm" onsubmit="handleSendMessage(event)" class="relative flex items-center bg-slate-800/90 border border-slate-700/80 rounded-2xl shadow-lg focus-within:border-indigo-500 transition-all">
-                    <textarea id="userInput" rows="1" placeholder="Nhắn tin cho ZinZin AI... (Nhấn Shift + Enter để xuống dòng)" class="w-full bg-transparent text-slate-100 placeholder-slate-400 text-sm px-4 py-3.5 outline-none resize-none max-h-36 custom-scrollbar"></textarea>
-                    <button type="submit" id="sendBtn" class="m-2 bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <textarea id="userInput" rows="1" placeholder="Nhắn tin cho ZinZin AI... (Shift + Enter xuống dòng)" class="w-full bg-transparent text-slate-100 placeholder-slate-400 text-sm px-4 py-3.5 outline-none resize-none max-h-36 custom-scrollbar"></textarea>
+                    <button type="submit" id="sendBtn" class="m-2 bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
                         <i class="fa-solid fa-paper-plane text-sm"></i>
                     </button>
                 </form>
                 <div class="text-center mt-2">
-                    <p class="text-[11px] text-slate-500">ZinZin AI có thể tạo ra thông tin không chính xác. Hãy kiểm tra các đoạn mã quan trọng.</p>
+                    <p class="text-[10px] sm:text-[11px] text-slate-500">ZinZin AI có thể đưa ra thông tin hoặc đoạn mã cần kiểm tra lại trước khi sử dụng.</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- JavaScript Logic -->
+    <!-- AUTHENTICATION MODAL (Chọn tài khoản Google hoặc nhập Gmail/Mk) -->
+    <div id="authModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-2xl font-bold mx-auto mb-2 shadow-lg">Z</div>
+                <h3 class="text-xl font-bold text-white">Đăng nhập ZinZin AI</h3>
+                <p class="text-xs text-slate-400 mt-1">Chọn tài khoản Google của bạn hoặc đăng nhập trực tiếp</p>
+            </div>
+
+            <!-- Tabs Switcher -->
+            <div class="flex bg-slate-800 p-1 rounded-xl mb-5">
+                <button type="button" onclick="switchAuthTab('google')" id="tabGoogleBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition">Tài khoản Google</button>
+                <button type="button" onclick="switchAuthTab('email')" id="tabEmailBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Nhập Email & Mật khẩu</button>
+            </div>
+
+            <!-- Tab 1: Google Account Picker -->
+            <div id="googleAuthSection" class="space-y-3">
+                <p class="text-xs font-medium text-slate-300">Chọn tài khoản để tiếp tục:</p>
+                <div class="space-y-2">
+                    <div onclick="loginAsGoogleAccount('Nguyễn Văn An', 'nguyenvanan.zin@gmail.com', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100')" class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 cursor-pointer transition">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" class="w-10 h-10 rounded-full object-cover">
+                        <div class="overflow-hidden flex-1">
+                            <p class="text-sm font-semibold text-white truncate">Nguyễn Văn An</p>
+                            <p class="text-xs text-slate-400 truncate">nguyenvanan.zin@gmail.com</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+                    </div>
+
+                    <div onclick="loginAsGoogleAccount('ZinZin Developer', 'zinzin.coder@gmail.com', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100')" class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 cursor-pointer transition">
+                        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100" class="w-10 h-10 rounded-full object-cover">
+                        <div class="overflow-hidden flex-1">
+                            <p class="text-sm font-semibold text-white truncate">ZinZin Developer</p>
+                            <p class="text-xs text-slate-400 truncate">zinzin.coder@gmail.com</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Direct Email & Password Form -->
+            <form id="emailAuthSection" onsubmit="loginWithEmailPassword(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Địa chỉ Gmail</label>
+                    <input type="email" id="inputEmail" required placeholder="vidu@gmail.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Mật khẩu</label>
+                    <input type="password" id="inputPassword" required placeholder="••••••••" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl text-sm shadow-lg transition">Đăng nhập</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // API Keys cấu hình
         const API_KEYS = {
             "gemini-4-argon": "sk-live-99b6aa7022a6f990b6ee62129c6ff9c9",
             "claude-opus-5-5": "sk-live-99e192f9da55c06fc4e9f673dd8f0b00"
         };
-
         const GATEWAY_URL = "https://literouter.fun/v1/chat/completions";
 
         let chats = JSON.parse(localStorage.getItem('zinzin_chats')) || [];
         let currentChatId = localStorage.getItem('zinzin_current_id') || null;
 
-        // Khởi tạo ứng dụng
         document.addEventListener('DOMContentLoaded', () => {
             renderChatList();
             if (chats.length > 0 && currentChatId) {
@@ -169,7 +235,6 @@
             }
             checkSavedUser();
 
-            // Auto-resize textarea
             const textarea = document.getElementById('userInput');
             textarea.addEventListener('input', function() {
                 this.style.height = 'auto';
@@ -186,7 +251,9 @@
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-ml-72');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         }
 
         function createNewChat() {
@@ -199,6 +266,7 @@
             currentChatId = newChat.id;
             saveAndRender();
             clearChatUI();
+            if(window.innerWidth < 768) toggleSidebar();
         }
 
         function saveAndRender() {
@@ -214,7 +282,10 @@
                 const isActive = chat.id === currentChatId;
                 const div = document.createElement('div');
                 div.className = `group flex items-center justify-between p-2.5 rounded-xl text-sm cursor-pointer transition ${isActive ? 'bg-indigo-600/20 text-indigo-300 font-medium border border-indigo-500/30' : 'text-slate-300 hover:bg-slate-800/60'}`;
-                div.onclick = () => loadChat(chat.id);
+                div.onclick = () => {
+                    loadChat(chat.id);
+                    if(window.innerWidth < 768) toggleSidebar();
+                };
                 div.innerHTML = `
                     <div class="flex items-center gap-2.5 truncate">
                         <i class="fa-regular fa-message text-xs"></i>
@@ -243,7 +314,7 @@
 
             showWelcome(false);
             chat.messages.forEach(msg => {
-                appendMessageToUI(msg.role, msg.content, false);
+                appendMessageToUI(msg.role, msg.content);
             });
             scrollToBottom();
         }
@@ -265,11 +336,8 @@
         function showWelcome(show) {
             let welcome = document.getElementById('welcomeScreen');
             if (show) {
-                if (!welcome) {
-                    location.reload();
-                } else {
-                    welcome.style.display = 'flex';
-                }
+                if (welcome) welcome.style.display = 'flex';
+                else location.reload();
             } else {
                 if (welcome) welcome.style.display = 'none';
             }
@@ -278,7 +346,7 @@
         function clearChatUI() {
             const container = document.getElementById('chatMessages');
             container.innerHTML = `
-                <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4">
+                <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 px-4">
                     <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-3xl font-bold shadow-xl shadow-indigo-500/20">Z</div>
                     <h2 class="text-2xl font-bold text-white">ZinZin AI luôn sẵn sàng!</h2>
                     <p class="text-sm text-slate-400">Hãy đặt câu hỏi hoặc yêu cầu viết code bất kỳ.</p>
@@ -310,12 +378,10 @@
             input.style.height = 'auto';
             showWelcome(false);
 
-            // Thêm tin nhắn user vào state & UI
             chat.messages.push({ role: 'user', content: text });
-            appendMessageToUI('user', text, true);
+            appendMessageToUI('user', text);
             saveAndRender();
 
-            // Tạo khung suy nghĩ (Thinking animation)
             const thinkingId = 'thinking_' + Date.now();
             appendThinkingUI(thinkingId);
             scrollToBottom();
@@ -341,16 +407,12 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Lỗi kết nối Gateway (${response.status})`);
-                }
+                if (!response.ok) throw new Error(`Lỗi kết nối Gateway (${response.status})`);
 
-                // Xóa khung suy nghĩ
                 removeElement(thinkingId);
 
-                // Tạo khung AI response streaming
                 const aiMsgId = 'ai_' + Date.now();
-                appendMessageToUI('assistant', '', true, aiMsgId);
+                appendMessageToUI('assistant', '', aiMsgId);
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
@@ -389,39 +451,58 @@
             } catch (error) {
                 removeElement(thinkingId);
                 const errorMsg = `⚠️ **Lỗi kết nối:** ${error.message}. Vui lòng thử lại sau.`;
-                appendMessageToUI('assistant', errorMsg, true);
+                appendMessageToUI('assistant', errorMsg);
                 chat.messages.push({ role: 'assistant', content: errorMsg });
                 saveAndRender();
             }
         }
 
-        function appendMessageToUI(role, content, saveToState = false, customId = null) {
+        function appendMessageToUI(role, content, customId = null) {
             const container = document.getElementById('chatMessages');
             const div = document.createElement('div');
             if (customId) div.id = customId;
-            div.className = `flex gap-4 max-w-4xl mx-auto w-full ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            div.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full ${role === 'user' ? 'justify-end' : 'justify-start'}`;
 
             if (role === 'user') {
+                // Kiểm tra nếu nội dung quá dài thì thu gọn và hiển thị nút "Xem thêm"
+                const isLongText = content.length > 200 || (content.split('\n').length > 3);
+                const msgUniqueId = 'user_msg_' + Math.random().toString(36.substring(2, 9));
+                
                 div.innerHTML = `
-                    <div class="bg-indigo-600 text-white px-4 py-3 rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[75%] text-sm shadow-md whitespace-pre-wrap leading-relaxed">${escapeHtml(content)}</div>
+                    <div class="bg-indigo-600 text-white px-4 py-3 rounded-2xl rounded-tr-none max-w-[88%] sm:max-w-[75%] text-sm shadow-md leading-relaxed">
+                        <div id="${msgUniqueId}" class="${isLongText ? 'msg-collapsed' : ''} whitespace-pre-wrap">${escapeHtml(content)}</div>
+                        ${isLongText ? `<button onclick="toggleLongMessage('${msgUniqueId}', this)" class="mt-1.5 text-xs font-semibold text-indigo-200 hover:text-white underline block">Xem thêm ↓</button>` : ''}
+                    </div>
                     <div class="w-8 h-8 rounded-full bg-indigo-500/30 flex items-center justify-center text-xs font-bold shrink-0 border border-indigo-500/40">Bạn</div>
                 `;
             } else {
                 const formattedHtml = formatMarkdown(content);
                 div.innerHTML = `
                     <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-xs font-bold shrink-0 shadow">Z</div>
-                    <div class="bg-slate-800/90 border border-slate-700/60 text-slate-200 px-5 py-4 rounded-2xl rounded-tl-none max-w-[90%] md:max-w-[85%] text-sm shadow-md leading-relaxed message-content">${formattedHtml}</div>
+                    <div class="bg-slate-800/90 border border-slate-700/60 text-slate-200 px-4 sm:px-5 py-4 rounded-2xl rounded-tl-none max-w-[92%] sm:max-w-[85%] text-sm shadow-md leading-relaxed message-content overflow-x-auto">${formattedHtml}</div>
                 `;
             }
             container.appendChild(div);
             addCopyButtonsToCodeBlocks(div);
         }
 
+        // Hàm thu gọn / mở rộng tin nhắn dài
+        function toggleLongMessage(msgId, btnEl) {
+            const textEl = document.getElementById(msgId);
+            if (textEl.classList.contains('msg-collapsed')) {
+                textEl.classList.remove('msg-collapsed');
+                btnEl.innerHTML = 'Thu gọn ↑';
+            } else {
+                textEl.classList.add('msg-collapsed');
+                btnEl.innerHTML = 'Xem thêm ↓';
+            }
+        }
+
         function appendThinkingUI(id) {
             const container = document.getElementById('chatMessages');
             const div = document.createElement('div');
             div.id = id;
-            div.className = `flex gap-4 max-w-4xl mx-auto w-full justify-start`;
+            div.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full justify-start`;
             div.innerHTML = `
                 <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-xs font-bold shrink-0 shadow animate-pulse">Z</div>
                 <div class="bg-slate-800/80 border border-slate-700/60 px-4 py-3 rounded-2xl rounded-tl-none flex items-center gap-2">
@@ -454,11 +535,7 @@
 
         function formatMarkdown(text) {
             if (!text) return '';
-            try {
-                return marked.parse(text);
-            } catch (e) {
-                return escapeHtml(text);
-            }
+            try { return marked.parse(text); } catch (e) { return escapeHtml(text); }
         }
 
         function addCopyButtonsToCodeBlocks(container) {
@@ -493,24 +570,58 @@
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
 
-        // Đăng nhập Google giả lập mượt mà
-        function loginWithGoogle() {
-            const mockUser = {
-                name: "Người dùng ZinZin",
-                avatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3v...=s96-c"
+        // --- AUTHENTICATION MODAL LOGIC ---
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            const googleSec = document.getElementById('googleAuthSection');
+            const emailSec = document.getElementById('emailAuthSection');
+            const gBtn = document.getElementById('tabGoogleBtn');
+            const eBtn = document.getElementById('tabEmailBtn');
+
+            if (tab === 'google') {
+                googleSec.classList.remove('hidden');
+                emailSec.classList.add('hidden');
+                gBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition";
+                eBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition";
+            } else {
+                googleSec.classList.add('hidden');
+                emailSec.classList.remove('hidden');
+                eBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition";
+                gBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition";
+            }
+        }
+
+        function loginAsGoogleAccount(name, email, avatar) {
+            const user = { name, email, avatar };
+            localStorage.setItem('zinzin_user', JSON.stringify(user));
+            updateAuthUI(user);
+            closeAuthModal();
+        }
+
+        function loginWithEmailPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('inputEmail').value;
+            const name = email.split('@')[0];
+            const user = {
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                email: email,
+                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
             };
-            // Fallback avatar đẹp
-            mockUser.avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces";
-            
-            localStorage.setItem('zinzin_user', JSON.stringify(mockUser));
-            updateAuthUI(mockUser);
+            localStorage.setItem('zinzin_user', JSON.stringify(user));
+            updateAuthUI(user);
+            closeAuthModal();
         }
 
         function checkSavedUser() {
             const saved = localStorage.getItem('zinzin_user');
-            if (saved) {
-                updateAuthUI(JSON.parse(saved));
-            }
+            if (saved) updateAuthUI(JSON.parse(saved));
         }
 
         function updateAuthUI(user) {
@@ -518,6 +629,7 @@
             const profile = document.getElementById('userProfile');
             profile.classList.remove('hidden');
             document.getElementById('userName').innerText = user.name;
+            document.getElementById('userEmail').innerText = user.email;
             document.getElementById('userAvatar').src = user.avatar;
         }
 
